@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CipherDecode — Text Conversion Tool</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0f1117;
+            --bg-card: #1a1d27;
+            --bg-input: #12151e;
+            --border: #2a2f3e;
+            --text-primary: #e4e6f0;
+            --text-secondary: #8b8fa3;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-green: #22c55e;
+            --accent-pink: #f472b6;
+            --accent-orange: #fb923c;
+            --accent-yellow: #fbbf24;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--accent-purple);
+            top: -200px;
+            right: -100px;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        .glow-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-cyan);
+            bottom: -150px;
+            left: -100px;
+            animation: float 12s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 20px); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .logo .crypto { color: var(--accent-cyan); }
+        .logo .decode { color: var(--text-primary); }
+        .logo .dot { color: var(--accent-purple); }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .tagline span {
+            color: var(--accent-cyan);
+        }
+
+        /* Main App Card */
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            animation: fadeIn 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cipher Selector */
+        .cipher-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cipher-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cipher-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .cipher-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(168, 85, 247, 0.15));
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .cipher-btn .icon {
+            font-size: 1rem;
+        }
+
+        /* Text Areas */
+        .io-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 700px) {
+            .io-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .io-box {
+            position: relative;
+        }
+
+        .io-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .io-label-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .io-label-text .icon {
+            color: var(--accent-purple);
+        }
+
+        .io-label-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .io-action-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .io-action-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        textarea {
+            width: 100%;
+            height: 220px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        /* Shift Input (for Caesar cipher) */
+        .shift-control {
+            display: none;
+            align-items: center;
+            gap: 15px;
+            background: var(--bg-input);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .shift-control.visible {
+            display: flex;
+        }
+
+        .shift-control label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .shift-control input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .shift-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+        }
+
+        .shift-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Process Buttons */
+        .process-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .process-btn {
+            padding: 14px 35px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .process-btn.primary {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: var(--bg-dark);
+            box-shadow: 0 5px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .process-btn.primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 35px rgba(0, 212, 255, 0.4);
+        }
+
+        .process-btn.secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .process-btn.secondary:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .process-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* History */
+        .history-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .history-clear {
+            background: none;
+            border: none;
+            color: var(--accent-pink);
+            font-size: 0.8rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            font-family: inherit;
+        }
+
+        .history-clear:hover {
+            opacity: 1;
+        }
+
+        .history-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .history-item .mode {
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+
+        .history-item .preview {
+            color: var(--text-secondary);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .empty-state .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-input);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-cyan);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer span {
+            color: var(--accent-cyan);
+        }
+
+        /* === PASSWORD SCREEN STYLES === */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .password-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .password-box h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .password-box p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+
+        .password-input-field {
+            width: 100%;
+            padding: 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            margin-bottom: 15px;
+            transition: border-color 0.2s;
+        }
+
+        .password-input-field:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .error-message {
+            color: var(--accent-pink);
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            display: none;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="glow-orb glow-1"></div>
+    <div class="glow-orb glow-2"></div>
+
+    <div class="password-overlay" id="password-screen">
+        <div class="password-box">
+            <h2>🔒 SECURE ACCESS</h2>
+            <p>This utility is encrypted. Please provide credentials.</p>
+            <input type="password" id="app-password" class="password-input-field" placeholder="Enter Password">
+            <div id="password-error" class="error-message">❌ Access Denied. Invalid password.</div>
+            <button class="process-btn primary" style="width: 100%; justify-content: center;" onclick="checkPassword()">
+                UNMUTE INTERFACE
+            </button>
+        </div>
+    </div>
+
+    <div class="container" id="main-interface" style="display: none;">
+        <header>
+            <h1 class="logo">
+                <span class="crypto">CIPHER</span><span class="decode">DECODE</span><span class="dot">.</span>
+            </h1>
+            <p class="tagline">Paste any <span>encoded text</span> — get it readable instantly</p>
+        </header>
+
+        <div class="app-card">
+            <div class="cipher-selector">
+                <button class="cipher-btn active" data-cipher="auto">
+                    <span class="icon">🎯</span> Auto Detect
+                </button>
+                <button class="cipher-btn" data-cipher="caesar">
+                    <span class="icon">🔄</span> Caesar Cipher
+                </button>
+                <button class="cipher-btn" data-cipher="rot13">
+                    <span class="icon">🔁</span> ROT13
+                </button>
+                <button class="cipher-btn" data-cipher="reverse">
+                    <span class="icon">↔️</span> Reverse
+                </button>
+                <button class="cipher-btn" data-cipher="atbash">
+                    <span class="icon">🪞</span> Atbash
+                </button>
+                <button class="cipher-btn" data-cipher="leetspeak">
+                    <span class="icon">👽</span> Leetspeak
+                </button>
+                <button class="cipher-btn" data-cipher="base64">
+                    <span class="icon">📦</span> Base64
+                </button>
+                <button class="cipher-btn" data-cipher="morse">
+                    <span class="icon">📡</span> Morse
+                </button>
+                <button class="cipher-btn" data-cipher="binary">
+                    <span class="icon">0️⃣</span> Binary
+                </button>
+            </div>
+
+            <div class="shift-control" id="shift-control">
+                <label>Shift Amount:</label>
+                <input type="range" id="shift-slider" min="1" max="25" value="3">
+                <span class="shift-value" id="shift-value">3</span>
+            </div>
+
+            <div class="io-section">
+                <div class="io-box">
+                    <div class="io-label">
+                        <span class="io-label-text">
+                            <span class="icon">📝</span>
+                            Input Text
+                        </span>
+                        <div class="io-label-actions">
+                            <button class="io-action-btn" onclick="pasteInput()">📋 Paste</button>
+                            <button class="io-action-btn" onclick="clearInput()">🗑️ Clear</button>
+                        </div>
+                    </div>
+                    <textarea id="input-text" placeholder="Paste your encoded text here...&#10;&#10;Examples:&#10;• GUR PBZZNAQ PBQRF FBYI… (ROT13)&#10;• Svool Kilnv (Reversed)&#10;• G:/F;K4K4B (Leetspeak)"></textarea>
+                </div>
+
+                <div class="io-box">
+                    <div class="io-label">
+                        <span class="io-label-text">
+                            <span class="icon">✨</span>
+                            Decoded Output
+                        </span>
+                        <div class="io-label-actions">
+                            <button class="io-action-btn" onclick="copyOutput()">📋 Copy</button>
+                            <button class="io-action-btn" onclick="clearOutput()">🗑️ Clear</button>
+                        </div>
+                    </div>
+                    <textarea id="output-text" placeholder="Decoded text will appear here…" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="process-btns">
+                <button class="process-btn primary" onclick="decodeText()">
+                    🔓 DECODE
+                </button>
+                <button class="process-btn secondary" onclick="encodeText()">
+                    🔒 ENCODE
+                </button>
+            </div>
+
+            <div class="history-section">
+                <div class="history-header">
+                    <span class="history-title">📜 Recent Conversions</span>
+                    <button class="history-clear" onclick="clearHistory()">Clear All</button>
+                </div>
+                <div class="history-grid" id="history-grid">
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <div>No conversions yet — try one above!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Decoding the mysteries, one cipher at a time <span>✦</span>
+        </footer>
+    </div>
+
+    <script>
+        // ===== PASSWORD SYSTEM FUNCTION =====
+        function checkPassword() {
+            const userInput = document.getElementById('app-password').value;
+            const errorBanner = document.getElementById('password-error');
+            
+            if (userInput === 'rcb18') {
+                document.getElementById('password-screen').style.display = 'none';
+                document.getElementById('main-interface').style.display = 'block';
+            } else {
+                errorBanner.style.display = 'block';
+                document.getElementById('app-password').value = '';
+            }
+        }
+
+        // Allow 'Enter' key to activate password submit
+        document.getElementById('app-password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // ===== CIPHER CONFIGURATION =====
+        let currentCipher = 'auto';
+        let shiftValue = 3;
+        let history = [];
+
+        // ===== CIPHER FUNCTIONS =====
+
+        // Caesar Cipher
+        function caesarCipher(text, shift, decode = true) {
+            return text.split('').map(char => {
+                if (char.match(/[a-z]/i)) {
+                    const code = char.charCodeAt(0);
+                    const isUpper = code >= 65 && code <= 90;
+                    const base = isUpper ? 65 : 97;
+                    const actualShift = decode ? -shift : shift;
+                    return String.fromCharCode(((code - base + actualShift + 26) % 26) + base);
+                }
+                return char;
+            }).join('');
+        }
+
+        // ROT13
+        function rot13(text) {
+            return caesarCipher(text, 13);
+        }
+
+        // Reverse
+        function reverseText(text) {
+            return text.split('').reverse().join('');
+        }
+
+        // Atbash (A↔Z, B↔Y, etc.)
+        function atbash(text) {
+            return text.split('').map(char => {
+                if (char.match(/[a-z]/i)) {
+                    const code = char.charCodeAt(0);
+                    const isUpper = code >= 65 && code <= 90;
+                    const base = isUpper ? 65 : 97;
+                    return String.fromCharCode(base + (25 - (code - base)));
+                }
+                return char;
+            }).join('');
+        }
+
+        // Leetspeak decoder
+        const leetMap = {
+            '4': 'a', '8': 'b', '3': 'e', '6': 'g', '1': 'i', '!': 'i',
+            '5': 's', '$': 's', '0': 'o', '2': 't', '7': 't', '+': 't',
+            '@': 'a', '&': 'e', '|': 'l', '9': 'g', '[': 'c', '(': 'c'
+        };
+
+        function leetspeak(text, decode = true) {
+            if (decode) {
+                let result = text.toLowerCase();
+                for (const [l, r] of Object.entries(leetMap)) {
+                    result = result.split(l).join(r);
+                }
+                return result;
+            } else {
+                let result = text.toLowerCase();
+                const encodeMap = {
+                    'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7', 'b': '8'
+                };
+                for (const [l, r] of Object.entries(encodeMap)) {
+                    result = result.split(l).join(r);
+                }
+                return result;
+            }
+        }
+
+        // Base64
+        function base64(text, decode = true) {
+            try {
+                if (decode) {
+                    return atob(text);
+                } else {
+                    return btoa(text);
+                }
+            } catch (e) {
+                return '[Invalid Base64]';
+            }
+        }
+
+        // Morse Code
+        const morseCode = {
+            '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D', '.': 'E',
+            '..-.': 'F', '--.': 'G', '....': 'H', '..': 'I', '.---': 'J',
+            '-.-': 'K', '.-..': 'L', '--': 'M', '-.': 'N', '---': 'O',
+            '.--.': 'P', '--.-': 'Q', '.-.': 'R', '...': 'S', '-': 'T',
+            '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X', '-.--': 'Y', '--..': 'Z',
+            '-----': '0', '.----': '1', '..---': '2', '...--': '3', '....-': '4',
+            '.....': '5', '-....': '6', '--...': '7', '---..': '8', '----.': '9'
+        };
+
+        function morse(text, decode = true) {
+            if (decode) {
+                if (!text.match(/[.\-]/)) return text;
+                return text.split('   ').map(word =>
+                    word.split(' ').map(code => morseCode[code] || code).join('')
+                ).join(' ');
+            } else {
+                const reverseMorse = Object.fromEntries(Object.entries(morseCode).map(([k, v]) => [v, k]));
+                return text.toUpperCase().split('').map(char =>
+                    reverseMorse[char] || char
+                ).join(' ');
+            }
+        }
+
+        // Binary
+        function binary(text, decode = true) {
+            if (decode) {
+                const words = text.trim().split(/\s+/);
+                if (words.every(w => /^[01]+$/.test(w) && w.length % 7 === 0 || w.length % 8 === 0)) {
+                    return words.map(w => {
+                        const charCode = parseInt(w, 2);
+                        return isNaN(charCode) ? w : String.fromCharCode(charCode);
+                    }).join('');
+                }
+                const chars = text.match(/[01]{8}/g);
+                if (chars) {
+                    return chars.map(c => String.fromCharCode(parseInt(c, 2))).join('');
+                }
+                return text;
+            } else {
+                return text.split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' ');
+            }
+        }
+
+        // Auto-detect cipher
+        function autoDetect(text) {
+            if (/^[.\- ]+$/.test(text.trim())) return 'morse';
+            if (/^[01 ]+$/.test(text.trim()) && text.includes(' ')) return 'binary';
+            if (/^[A-Za-z0-9+/=]+$/.test(text.trim()) && text.trim().length >= 4) {
+                try {
+                    atob(text);
+                    return 'base64';
+                } catch (e) {}
+            }
+
+            const rot13d = rot13(text);
+            if (rot13d.match(/\bthe\b/) || rot13d.match(/\band\b/) || rot13d.match(/\bof\b/)) {
+                return 'rot13';
+            }
+
+            const atbashd = atbash(text);
+            if (atbashd.match(/\bthe\b/) || atbashd.match(/\band\b/)) {
+                return 'atbash';
+            }
+
+            if (text.match(/[4815307!$@+|&]/)) {
+                return 'leetspeak';
+            }
+
+            const reversed = reverseText(text);
+            if (reversed.match(/\bthe\b/) || reversed.match(/\band\b/)) {
+                return 'reverse';
+            }
+
+            return 'caesar';
+        }
+
+        // ===== MAIN FUNCTIONS =====
+
+        function decodeText() {
+            const input = document.getElementById('input-text').value;
+            if (!input.trim()) return;
+
+            let cipher = currentCipher;
+            if (cipher === 'auto') {
+                cipher = autoDetect(input);
+            }
+
+            let result = '';
+            switch (cipher) {
+                case 'caesar': result = caesarCipher(input, shiftValue, true); break;
+                case 'rot13': result = rot13(input); break;
+                case 'reverse': result = reverseText(input); break;
+                case 'atbash': result = atbash(input); break;
+                case 'leetspeak': result = leetspeak(input, true); break;
+                case 'base64': result = base64(input, true); break;
+                case 'morse': result = morse(input, true); break;
+                case 'binary': result = binary(input, true); break;
+                default: result = input;
+            }
+
+            document.getElementById('output-text').value = result;
+            addToHistory(input, result, cipher);
+        }
+
+        function encodeText() {
+            const input = document.getElementById('input-text').value;
+            if (!input.trim()) return;
+
+            let cipher = currentCipher;
+            if (cipher === 'auto') cipher = 'caesar';
+
+            let result = '';
+            switch (cipher) {
+                case 'caesar': result = caesarCipher(input, shiftValue, false); break;
+                case 'rot13': result = rot13(input); break;
+                case 'reverse': result = reverseText(input); break;
+                case 'atbash': result = atbash(input); break;
+                case 'leetspeak': result = leetspeak(input, false); break;
+                case 'base64': result = base64(input, false); break;
+                case 'morse': result = morse(input, false); break;
+                case 'binary': result = binary(input, false); break;
+                default: result = input;
+            }
+
+            document.getElementById('output-text').value = result;
+            addToHistory(input, result, cipher + ' (encoded)');
+        }
+
+        // ===== UI FUNCTIONS =====
+
+        document.querySelectorAll('.cipher-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cipher-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCipher = btn.dataset.cipher;
+
+                const shiftControl = document.getElementById('shift-control');
+                shiftControl.classList.toggle('visible', currentCipher === 'caesar');
+            });
+        });
+
+        document.getElementById('shift-slider').addEventListener('input', (e) => {
+            shiftValue = parseInt(e.target.value);
+            document.getElementById('shift-value').textContent = shiftValue;
+        });
+
+        async function pasteInput() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('input-text').value = text;
+            } catch (e) {
+                alert('Please paste manually (Ctrl+V)');
+            }
+        }
+
+        async function copyOutput() {
+            const text = document.getElementById('output-text').value;
+            if (text) {
+                await navigator.clipboard.writeText(text);
+            }
+        }
+
+        function clearInput() { document.getElementById('input-text').value = ''; }
+        function clearOutput() { document.getElementById('output-text').value = ''; }
+
+        function addToHistory(input, output, mode) {
+            history.unshift({ input, output, mode, time: Date.now() });
+            if (history.length > 10) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const grid = document.getElementById('history-grid');
+            if (history.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <div>No conversions yet — try one above!</div>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = history.map((h, i) => `
+                <div class="history-item" onclick="loadHistory(${i})">
+                    <span class="mode">${h.mode}</span>
+                    <span class="preview">${h.output.slice(0, 40)}${h.output.length > 40 ? '…' : ''}</span>
+                </div>
+            `).join('');
+        }
+
+        function loadHistory(index) {
+            const item = history[index];
+            document.getElementById('input-text').value = item.input;
+            document.getElementById('output-text').value = item.output;
+        }
+
+        function clearHistory() {
+            history = [];
+            renderHistory();
+        }
+
+        document.getElementById('input-text').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                decodeText();
+            }
+        });
+    </script>
+</body>
+</html>
